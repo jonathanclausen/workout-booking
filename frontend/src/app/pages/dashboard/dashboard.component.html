@@ -1,0 +1,391 @@
+<div class="navbar">
+  <div class="navbar-content">
+    <a href="/" class="navbar-brand">Arca Booking</a>
+    <div class="navbar-user" *ngIf="user">
+      <span>{{ user.name }}</span>
+      <img [src]="user.picture" alt="User avatar" class="user-avatar" *ngIf="user.picture">
+      <button class="btn btn-secondary" (click)="logout()">Logout</button>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="loading" *ngIf="loading">Loading...</div>
+
+  <div *ngIf="!loading">
+    <!-- Arca Credentials Section -->
+    <div class="card">
+      <h2>Arca Account Connection</h2>
+      
+      <div *ngIf="!profile?.hasArcaCredentials" class="alert alert-info">
+        Please enter your Arca credentials to enable automatic booking.
+      </div>
+
+      <div *ngIf="profile?.hasArcaCredentials" class="alert alert-success">
+        ✓ Arca credentials saved
+        <button class="btn btn-secondary" (click)="testConnection()" [disabled]="testingConnection" style="margin-left: 12px;">
+          {{ testingConnection ? 'Testing...' : 'Test Connection' }}
+        </button>
+      </div>
+
+      <div class="form-group">
+        <label for="arcaUsername">Arca Username</label>
+        <input 
+          type="text" 
+          id="arcaUsername" 
+          [(ngModel)]="arcaUsername" 
+          placeholder="your@email.com"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="arcaPassword">Arca Password</label>
+        <input 
+          type="password" 
+          id="arcaPassword" 
+          [(ngModel)]="arcaPassword" 
+          placeholder="••••••••"
+        >
+      </div>
+
+      <button 
+        class="btn btn-primary" 
+        (click)="saveArcaCredentials()" 
+        [disabled]="credentialsSaving"
+      >
+        {{ credentialsSaving ? 'Saving...' : 'Save Credentials' }}
+      </button>
+
+      <div *ngIf="credentialsMessage" 
+           [class.alert-success]="credentialsMessage.includes('success') || credentialsMessage.includes('✓')"
+           [class.alert-error]="!credentialsMessage.includes('success') && !credentialsMessage.includes('✓')"
+           class="alert" 
+           style="margin-top: 12px;">
+        {{ credentialsMessage }}
+      </div>
+    </div>
+
+    <!-- Current Arca Bookings Section -->
+    <div class="card" *ngIf="profile?.hasArcaCredentials">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2>My Current Bookings</h2>
+        <button class="btn btn-secondary" (click)="loadArcaBookings()" [disabled]="loadingArcaBookings">
+          {{ loadingArcaBookings ? 'Loading...' : '🔄 Refresh' }}
+        </button>
+      </div>
+
+      <div *ngIf="loadingArcaBookings" class="loading">Loading bookings...</div>
+
+      <div *ngIf="!loadingArcaBookings && arcaBookings.length === 0" class="empty-state">
+        <p>No current bookings found.</p>
+      </div>
+
+      <div *ngIf="!loadingArcaBookings && arcaBookings.length > 0">
+        <table>
+          <thead>
+            <tr>
+              <th>Class</th>
+              <th>Date & Time</th>
+              <th>Location</th>
+              <th>Instructor</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let booking of arcaBookings">
+              <td>{{ booking.ss_event?.name || 'N/A' }}</td>
+              <td>{{ booking.start_date_time | date:'short' }}</td>
+              <td>{{ booking.ss_event?.gym?.name || 'N/A' }}</td>
+              <td>{{ booking.ss_event?.instructor || 'N/A' }}</td>
+              <td>
+                <span class="badge" 
+                      [class.badge-warning]="booking.on_waiting_list"
+                      [class.badge-success]="!booking.on_waiting_list">
+                  {{ booking.on_waiting_list ? 'Waiting List' : 'Booked' }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        
+        <div style="margin-top: 12px; padding: 12px; background: #e8f0fe; border-radius: 4px;">
+          <small style="color: #1967d2;">
+            <strong>✓ Showing {{ arcaBookings.length }} booking(s)</strong> - These are your current bookings from Arca.
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Booking Rules Section -->
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2>Booking Rules</h2>
+        <button class="btn btn-primary" (click)="toggleRuleForm()">
+          {{ showRuleForm ? 'Cancel' : '+ Add Rule' }}
+        </button>
+      </div>
+
+      <div *ngIf="!profile?.hasArcaCredentials" class="alert alert-warning">
+        Please save your Arca credentials first before adding booking rules.
+      </div>
+
+      <!-- Add Rule Form -->
+      <div *ngIf="showRuleForm" class="rule-form">
+        <div style="margin-bottom: 16px;">
+          <button class="btn btn-secondary" (click)="toggleClassBrowser()" type="button">
+            {{ showClassBrowser ? '✕ Close Browser' : '📅 Browse Available Classes' }}
+          </button>
+        </div>
+
+        <!-- Class Browser -->
+        <div *ngIf="showClassBrowser" style="margin-bottom: 20px; padding: 16px; background: white; border: 1px solid #dadce0; border-radius: 4px;">
+          
+          <!-- Step 1: Select Gym -->
+          <div *ngIf="!selectedGym">
+            <h3 style="margin: 0 0 16px 0;">Step 1: Select a Location</h3>
+            
+            <div *ngIf="loadingGyms" class="loading" style="padding: 20px;">Loading locations...</div>
+
+            <div *ngIf="!loadingGyms && arcaGyms.length > 0" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
+              <div *ngFor="let gym of arcaGyms" 
+                   (click)="selectGym(gym)"
+                   style="padding: 16px; border: 2px solid #e0e0e0; border-radius: 8px; cursor: pointer; transition: all 0.2s; text-align: center;"
+                   onmouseover="this.style.borderColor='#1a73e8'; this.style.background='#f8f9fa'" 
+                   onmouseout="this.style.borderColor='#e0e0e0'; this.style.background='white'">
+                <div style="font-weight: 600; margin-bottom: 4px;">{{ gym.name }}</div>
+                <div style="font-size: 12px; color: #5f6368;">{{ gym.address_district || gym.address_city }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2: Browse Classes for Selected Gym -->
+          <div *ngIf="selectedGym">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <div>
+                <h3 style="margin: 0;">Classes at {{ selectedGym.name }}</h3>
+                <small style="color: #5f6368;">{{ selectedGym.address_street }}, {{ selectedGym.address_city }}</small>
+              </div>
+              <button class="btn btn-secondary" (click)="selectedGym = null; arcaClasses = [];" type="button">
+                ← Change Location
+              </button>
+            </div>
+
+            <div class="form-group">
+              <input 
+                type="text" 
+                [(ngModel)]="classSearchTerm" 
+                (ngModelChange)="filterClasses()"
+                placeholder="🔍 Search classes by name or instructor..."
+              >
+            </div>
+
+            <div *ngIf="loadingClasses" class="loading" style="padding: 20px;">Loading classes...</div>
+
+            <div *ngIf="!loadingClasses && filteredClasses.length === 0" style="padding: 20px; text-align: center; color: #5f6368;">
+              No classes found for this location
+            </div>
+
+            <div *ngIf="!loadingClasses && filteredClasses.length > 0" style="max-height: 400px; overflow-y: auto;">
+              <div *ngFor="let classItem of filteredClasses" 
+                   class="class-item"
+                   (click)="selectClass(classItem)"
+                   style="padding: 12px; border-bottom: 1px solid #e0e0e0; cursor: pointer; transition: background 0.2s;"
+                   onmouseover="this.style.background='#f8f9fa'" 
+                   onmouseout="this.style.background='white'">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <strong style="font-size: 16px;">{{ classItem.name || classItem.title }}</strong>
+                    <div style="font-size: 14px; color: #5f6368; margin-top: 4px;">
+                      👤 {{ classItem.instructor || 'No instructor' }} • 
+                      🕐 {{ classItem.start_date_time | date:'EEE, MMM d • h:mm a' }}
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 8px;">
+                    <button 
+                      class="btn btn-secondary" 
+                      (click)="bookClassNow(classItem, $event)"
+                      style="padding: 6px 12px; font-size: 13px; background: #34a853; color: white; border: none;"
+                      title="Book this class immediately">
+                      🎯 Book Now
+                    </button>
+                    <button class="btn btn-primary" style="padding: 6px 12px; font-size: 13px;">
+                      Select for Rule
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="className">Class Name *</label>
+          <input 
+            type="text" 
+            id="className" 
+            [(ngModel)]="ruleForm.className" 
+            placeholder="e.g., WOD (Stuen)"
+            readonly
+          >
+          <small style="color: #5f6368;">Select a class from the browser above</small>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="dayOfWeek">Day of Week *</label>
+            <select id="dayOfWeek" [(ngModel)]="ruleForm.dayOfWeek">
+              <option *ngFor="let day of daysOfWeek" [value]="day">
+                {{ day | titlecase }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="time">Time *</label>
+            <input 
+              type="time" 
+              id="time" 
+              [(ngModel)]="ruleForm.time"
+            >
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="instructor">Instructor (optional, for reference only)</label>
+            <input 
+              type="text" 
+              id="instructor" 
+              [(ngModel)]="ruleForm.instructor" 
+              placeholder="Instructor name"
+              readonly
+            >
+            <small style="color: #5f6368; display: block; margin-top: 4px;">ℹ️ Not used for matching - any instructor teaching this class will be booked</small>
+          </div>
+
+          <div class="form-group">
+            <label for="location">Location</label>
+            <input 
+              type="text" 
+              id="location" 
+              [(ngModel)]="ruleForm.location" 
+              placeholder="Location/Box"
+              readonly
+            >
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="maxWaitingList">Max Waiting List (optional)</label>
+          <input 
+            type="number" 
+            id="maxWaitingList" 
+            [(ngModel)]="ruleForm.maxWaitingList" 
+            min="0"
+            max="10"
+            placeholder="0"
+          >
+          <small style="color: #5f6368; display: block; margin-top: 4px;">
+            ℹ️ Book even if class is full with this many or fewer people on waiting list.
+            <br>Example: "2" means book if spots available OR if waiting list has 0-2 people.
+            <br>Default: 0 (only book if spots available)
+          </small>
+        </div>
+
+        <div style="margin-top: 12px; padding: 12px; background: #e8f0fe; border-radius: 4px;">
+          <small style="color: #1967d2;">
+            📅 <strong>Recurring weekly booking:</strong> This will automatically book "{{ ruleForm.className || '[Select a class]' }}" 
+            every {{ ruleForm.dayOfWeek | titlecase }} at {{ ruleForm.time || '[time]' }} 
+            <span *ngIf="ruleForm.location">at {{ ruleForm.location }}</span><span *ngIf="ruleForm.maxWaitingList && ruleForm.maxWaitingList > 0">, accepting waiting list up to {{ ruleForm.maxWaitingList }} people</span>.
+          </small>
+        </div>
+
+        <button class="btn btn-primary" (click)="addBookingRule()" style="margin-top: 16px;">
+          ✓ Create Recurring Booking Rule
+        </button>
+      </div>
+
+      <!-- Rules List -->
+      <div *ngIf="bookingRules.length === 0 && !showRuleForm" class="empty-state">
+        <p>No booking rules yet. Add your first rule to start automatic booking!</p>
+      </div>
+
+      <div *ngIf="bookingRules.length > 0" class="rules-list">
+        <div *ngFor="let rule of bookingRules" class="rule-item">
+          <div class="rule-details">
+            <h4>{{ rule.className }}</h4>
+            <p style="margin: 8px 0;">
+              📅 Every <strong>{{ rule.dayOfWeek | titlecase }}</strong> at <strong>{{ rule.time }}</strong>
+            </p>
+            <p style="margin: 4px 0; font-size: 14px; color: #5f6368;">
+              <span *ngIf="rule.location">📍 {{ rule.location }}</span>
+              <span *ngIf="rule.instructor"> • 👤 {{ rule.instructor }}</span>
+              <span *ngIf="rule.maxWaitingList && rule.maxWaitingList > 0"> • 🎫 Waitlist: ≤{{ rule.maxWaitingList }}</span>
+              <span *ngIf="!rule.maxWaitingList || rule.maxWaitingList === 0"> • ✓ Available spots only</span>
+            </p>
+            <span class="badge" [class.badge-success]="rule.enabled" [class.badge-danger]="!rule.enabled">
+              {{ rule.enabled ? '✓ Active' : '✕ Disabled' }}
+            </span>
+          </div>
+          <div class="rule-actions">
+            <button 
+              class="btn btn-secondary" 
+              (click)="toggleRule(rule)"
+            >
+              {{ rule.enabled ? 'Disable' : 'Enable' }}
+            </button>
+            <button 
+              class="btn btn-danger" 
+              (click)="deleteRule(rule)"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Booking History Section -->
+    <div class="card">
+      <h2>Booking History</h2>
+      
+      <div *ngIf="bookingHistory.length === 0" class="empty-state">
+        <p>No bookings yet. Your automatic bookings will appear here.</p>
+      </div>
+
+      <table *ngIf="bookingHistory.length > 0">
+        <thead>
+          <tr>
+            <th>Attempt Date/Time</th>
+            <th>Class</th>
+            <th>Class Date/Time</th>
+            <th>Location</th>
+            <th>Status</th>
+            <th>Error</th>
+            <th>Type</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let booking of bookingHistory">
+            <td>{{ (booking.bookedAt || booking.timestamp) | date:'MMM d, y, h:mm a' }}</td>
+            <td>{{ booking.className || 'N/A' }}</td>
+            <td>{{ booking.classTime | date:'MMM d, y, h:mm a' }}</td>
+            <td>{{ booking.gym || 'N/A' }}</td>
+            <td>
+              <span class="badge" 
+                    [class.badge-success]="booking.status === 'success'"
+                    [class.badge-danger]="booking.status === 'failed'">
+                {{ booking.status }}
+              </span>
+            </td>
+            <td style="color: #d32f2f; font-size: 13px;">
+              {{ booking.error || '-' }}
+            </td>
+            <td>{{ booking.automatic ? '🤖 Auto' : '👤 Manual' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
