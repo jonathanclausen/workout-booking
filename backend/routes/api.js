@@ -117,7 +117,7 @@ router.get('/booking-rules', isAuthenticated, async (req, res) => {
 // Add booking rule
 router.post('/booking-rules', isAuthenticated, async (req, res) => {
   try {
-    const { className, dayOfWeek, time, instructor, location, enabled } = req.body;
+    const { className, dayOfWeek, time, instructor, location, enabled, maxWaitingList } = req.body;
 
     if (!className || !dayOfWeek || !time) {
       return res.status(400).json({ error: 'Missing required fields' });
@@ -131,6 +131,7 @@ router.post('/booking-rules', isAuthenticated, async (req, res) => {
       instructor: instructor || null,
       location: location || null,
       enabled: enabled !== false,
+      maxWaitingList: typeof maxWaitingList === 'number' ? maxWaitingList : 0,
       createdAt: new Date()
     };
 

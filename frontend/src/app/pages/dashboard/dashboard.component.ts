@@ -38,6 +38,7 @@ export class DashboardComponent implements OnInit {
   showRuleForm = false;
   showClassBrowser = false;
   classSearchTerm = '';
+  editingRuleId: string | null = null;  // Track which rule we're editing
   ruleForm: BookingRule = {
     className: '',
     dayOfWeek: 'monday',
@@ -176,6 +177,7 @@ export class DashboardComponent implements OnInit {
       this.showClassBrowser = false;
       this.selectedGym = null;
       this.arcaClasses = [];
+      this.editingRuleId = null;  // Clear edit mode when closing form
     }
   }
 
@@ -259,7 +261,8 @@ export class DashboardComponent implements OnInit {
       time: time,
       instructor: classInfo.instructor || '',
       location: classInfo.gym?.name || '',
-      enabled: true
+      enabled: true,
+      maxWaitingList: 0  // Default: only book if spots available
     };
     
     this.showClassBrowser = false;
@@ -298,6 +301,7 @@ export class DashboardComponent implements OnInit {
   }
 
   resetRuleForm(): void {
+    this.editingRuleId = null;
     this.ruleForm = {
       className: '',
       dayOfWeek: 'monday',
@@ -315,16 +319,50 @@ export class DashboardComponent implements OnInit {
       return;
     }
 
-    this.apiService.addBookingRule(this.ruleForm).subscribe({
-      next: (newRule) => {
-        this.bookingRules.push(newRule);
-        this.showRuleForm = false;
-        this.resetRuleForm();
-      },
-      error: (err) => {
-        alert('Failed to add booking rule: ' + (err.error?.error || 'Unknown error'));
-      }
-    });
+    if (this.editingRuleId) {
+      // Update existing rule
+      this.apiService.updateBookingRule(this.editingRuleId, this.ruleForm).subscribe({
+        next: () => {
+          const index = this.bookingRules.findIndex(r => r.id === this.editingRuleId);
+          if (index !== -1) {
+            this.bookingRules[index] = { ...this.bookingRules[index], ...this.ruleForm };
+          }
+          this.showRuleForm = false;
+          this.resetRuleForm();
+        },
+        error: (err) => {
+          alert('Failed to update booking rule: ' + (err.error?.error || 'Unknown error'));
+        }
+      });
+    } else {
+      // Add new rule
+      this.apiService.addBookingRule(this.ruleForm).subscribe({
+        next: (newRule) => {
+          this.bookingRules.push(newRule);
+          this.showRuleForm = false;
+          this.resetRuleForm();
+        },
+        error: (err) => {
+          alert('Failed to add booking rule: ' + (err.error?.error || 'Unknown error'));
+        }
+      });
+    }
+  }
+
+  editRule(rule: BookingRule): void {
+    this.editingRuleId = rule.id || null;
+    this.ruleForm = {
+      className: rule.className,
+      dayOfWeek: rule.dayOfWeek,
+      time: rule.time,
+      instructor: rule.instructor || '',
+      location: rule.location || '',
+      enabled: rule.enabled,
+      maxWaitingList: rule.maxWaitingList ?? 0
+    };
+    this.showRuleForm = true;
+    this.showClassBrowser = false;
+    this.loadGyms();
   }
 
   toggleRule(rule: BookingRule): void {

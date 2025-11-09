@@ -27,7 +27,7 @@ Automatically book your favorite Arca fitness classes when they become available
 - Arca account credentials
 - Google OAuth credentials
 
-**💰 Cost**: ~$0-2/month (mostly free tier). See [COST-OPTIMIZATION.md](COST-OPTIMIZATION.md) for details.
+**💰 Cost**: ~$0-2/month (mostly free tier). See [COST-OPTIMIZATION.md](docs/COST-OPTIMIZATION.md) for details.
 
 ## Local Development Setup
 
@@ -129,7 +129,7 @@ Visit `http://localhost:4200`
 
 ## Deployment to Google Cloud Run
 
-**See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment guide including:**
+**See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for complete deployment guide including:**
 - Environment variable handling
 - Security best practices  
 - OAuth configuration
@@ -146,10 +146,10 @@ Visit `http://localhost:4200`
 #    SESSION_SECRET=...
 
 # 2. Deploy (reads from .env automatically)
-.\deploy.ps1
+.\scripts\deploy.ps1
 
 # 3. Set up nightly cron job (2 AM)
-.\setup-cron.ps1
+.\scripts\setup-cron.ps1
 ```
 
 **Bash (Linux/Mac):**
@@ -291,14 +291,24 @@ arca-booking-app/
 │   ├── middleware/      # Auth middleware
 │   ├── routes/          # Express routes
 │   ├── services/        # Arca API client
+│   ├── tests/           # Unit tests
 │   └── server.js        # Main server file
 ├── frontend/
 │   └── src/
 │       └── app/
 │           ├── pages/   # Angular components
 │           └── services/# Angular services
+├── scripts/             # Deployment & setup scripts
+│   ├── deploy.ps1
+│   ├── setup-cron.ps1
+│   └── ...
+├── docs/                # Documentation
+│   ├── DEPLOYMENT.md
+│   ├── SETUP.md
+│   ├── TESTING.md
+│   └── ...
+├── e2e/                 # End-to-end tests
 ├── Dockerfile
-├── cloudbuild.yaml
 └── package.json
 ```
 

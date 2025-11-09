@@ -119,7 +119,7 @@
     <!-- Booking Rules Section -->
     <div class="card">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2>Booking Rules</h2>
+        <h2>{{ editingRuleId ? 'Edit Booking Rule' : 'Booking Rules' }}</h2>
         <button class="btn btn-primary" (click)="toggleRuleForm()">
           {{ showRuleForm ? 'Cancel' : '+ Add Rule' }}
         </button>
@@ -225,9 +225,10 @@
             id="className" 
             [(ngModel)]="ruleForm.className" 
             placeholder="e.g., WOD (Stuen)"
-            readonly
+            [readonly]="!editingRuleId"
           >
-          <small style="color: #5f6368;">Select a class from the browser above</small>
+          <small style="color: #5f6368;" *ngIf="!editingRuleId">Select a class from the browser above</small>
+          <small style="color: #5f6368;" *ngIf="editingRuleId">You can edit the class name manually or select a new class</small>
         </div>
 
         <div class="form-row">
@@ -258,7 +259,7 @@
               id="instructor" 
               [(ngModel)]="ruleForm.instructor" 
               placeholder="Instructor name"
-              readonly
+              [readonly]="!editingRuleId"
             >
             <small style="color: #5f6368; display: block; margin-top: 4px;">ℹ️ Not used for matching - any instructor teaching this class will be booked</small>
           </div>
@@ -270,7 +271,7 @@
               id="location" 
               [(ngModel)]="ruleForm.location" 
               placeholder="Location/Box"
-              readonly
+              [readonly]="!editingRuleId"
             >
           </div>
         </div>
@@ -301,7 +302,7 @@
         </div>
 
         <button class="btn btn-primary" (click)="addBookingRule()" style="margin-top: 16px;">
-          ✓ Create Recurring Booking Rule
+          {{ editingRuleId ? '✓ Update Booking Rule' : '✓ Create Recurring Booking Rule' }}
         </button>
       </div>
 
@@ -328,6 +329,13 @@
             </span>
           </div>
           <div class="rule-actions">
+            <button 
+              class="btn btn-secondary" 
+              (click)="editRule(rule)"
+              style="background: #1a73e8; color: white;"
+            >
+              ✏️ Edit
+            </button>
             <button 
               class="btn btn-secondary" 
               (click)="toggleRule(rule)"
