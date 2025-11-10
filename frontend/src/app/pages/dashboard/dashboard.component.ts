@@ -244,15 +244,24 @@ export class DashboardComponent implements OnInit {
     );
   }
 
+  toDanishTime(date: Date): Date {
+    // Convert to Danish timezone (Europe/Copenhagen - CET/CEST)
+    return new Date(date.toLocaleString('en-US', { timeZone: 'Europe/Copenhagen' }));
+  }
+
   selectClass(classInfo: any): void {
     // Extract day of week from start_date_time
     const classDate = new Date(classInfo.start_date_time);
-    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    const dayOfWeek = dayNames[classDate.getDay()];
     
-    // Extract time (HH:mm format)
-    const hours = classDate.getHours().toString().padStart(2, '0');
-    const minutes = classDate.getMinutes().toString().padStart(2, '0');
+    // Convert to Danish time for consistent day/time extraction
+    const danishDate = this.toDanishTime(classDate);
+    
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const dayOfWeek = dayNames[danishDate.getDay()];
+    
+    // Extract time (HH:mm format) in Danish timezone
+    const hours = danishDate.getHours().toString().padStart(2, '0');
+    const minutes = danishDate.getMinutes().toString().padStart(2, '0');
     const time = `${hours}:${minutes}`;
     
     this.ruleForm = {

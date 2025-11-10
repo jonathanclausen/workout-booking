@@ -5,6 +5,9 @@ const { db } = require('../config/firebase');
 const ArcaClient = require('../services/arca-client');
 const crypto = require('crypto');
 
+// Configuration: Arca booking window
+const MAX_DAYS_AHEAD = 13; // Maximum days in advance that classes can be booked
+
 function decrypt(text) {
   const ENCRYPTION_KEY = crypto.createHash('sha256')
     .update(process.env.SESSION_SECRET || 'your-secret-key')
@@ -41,16 +44,26 @@ function shouldBookWithWaitingList(classInfo, rule) {
   return false;
 }
 
+// Helper to convert date to Danish timezone (Europe/Copenhagen)
+function toDanishTime(date) {
+  // Convert to Danish time (CET/CEST - UTC+1/+2)
+  return new Date(date.toLocaleString('en-US', { timeZone: 'Europe/Copenhagen' }));
+}
+
 // Helper to check if a class matches booking rule
 function matchesRule(classInfo, rule) {
-  // Parse class date to get day of week and time
+  // Parse class date - the API returns times in Danish timezone
   const classDate = new Date(classInfo.start_date_time);
-  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  const classDayOfWeek = dayNames[classDate.getDay()];
   
-  // Extract time (HH:mm format)
-  const hours = classDate.getHours().toString().padStart(2, '0');
-  const minutes = classDate.getMinutes().toString().padStart(2, '0');
+  // Convert to Danish time for consistent day/time extraction
+  const danishDate = toDanishTime(classDate);
+  
+  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const classDayOfWeek = dayNames[danishDate.getDay()];
+  
+  // Extract time (HH:mm format) in Danish timezone
+  const hours = danishDate.getHours().toString().padStart(2, '0');
+  const minutes = danishDate.getMinutes().toString().padStart(2, '0');
   const classTime = `${hours}:${minutes}`;
   
   // Match class name (exact)
@@ -126,12 +139,10 @@ router.post('/check-bookings', verifyCronRequest, async (req, res) => {
         const gymsResponse = await arcaClient.getGyms();
         const gyms = gymsResponse.gyms || [];
         
-        // Classes are available 2 weeks in advance
-        // Check classes from 1-16 days ahead
-        // This catches available classes next week AND newly available classes 2 weeks out
+        // Fetch classes within the booking window (1-13 days ahead)
         const allClasses = [];
         
-        for (let daysAhead = 1; daysAhead <= 16; daysAhead++) {
+        for (let daysAhead = 1; daysAhead <= MAX_DAYS_AHEAD; daysAhead++) {
           const checkDate = new Date();
           checkDate.setDate(checkDate.getDate() + daysAhead);
           
@@ -156,6 +167,15 @@ router.post('/check-bookings', verifyCronRequest, async (req, res) => {
           
           for (const classInfo of allClasses) {
             if (matchesRule(classInfo, rule)) {
+              // Safety check: Verify class is not more than 13 days in the future
+              const classDate = new Date(classInfo.start_date_time);
+              const daysUntilClass = Math.ceil((classDate - new Date()) / (1000 * 60 * 60 * 24));
+              
+              if (daysUntilClass > MAX_DAYS_AHEAD) {
+                console.log(`Skipping class ${classInfo.id} - too far in advance (${daysUntilClass} days)`);
+                continue;
+              }
+              
               // Check if already booked on Arca
               if (bookedEventIds.has(classInfo.id)) {
                 console.log(`Skipping class ${classInfo.id} - already booked on Arca`);
