@@ -5,14 +5,13 @@
 steps:
   # Step 1: Run backend tests (self-contained unit tests)
   - name: 'node:20'
+    dir: 'backend'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        set -e
-        cd backend && \
-        cp package.test.json package.json && \
-        npm install && \
+        cp package.test.json package.json
+        npm install
         npm test
     env:
       - 'NODE_ENV=test'
@@ -23,13 +22,12 @@ steps:
 
   # Step 2: Build frontend
   - name: 'node:20'
+    dir: 'frontend'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        set -e
-        cd frontend && \
-        npm install && \
+        npm install
         npm run build
     id: 'build-frontend'
     waitFor: ['run-tests']
