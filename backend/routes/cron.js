@@ -289,5 +289,8 @@ router.post('/check-bookings', verifyCronRequest, async (req, res) => {
   }
 });
 
+// Export router and helper functions for testing
 module.exports = router;
+module.exports.matchesRule = matchesRule;
+module.exports.shouldBookWithWaitingList = shouldBookWithWaitingList;
 
