@@ -55,6 +55,13 @@ function matchesRule(classInfo, rule) {
     return false;
   }
 
+  console.log(
+    `Class candidate ${classInfo.id}`,
+    `raw=${classInfo.start_date_time}`,
+    `cph=${classDate.toISO()}`,
+    `utc=${classDate.toUTC().toISO()}`
+  );
+
   const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   const danishDay = dayNames[classDate.weekday % 7];
 
