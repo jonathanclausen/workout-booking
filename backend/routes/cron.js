@@ -57,13 +57,16 @@ function matchesRule(classInfo, rule) {
   }).format(classDate).toLowerCase();
   
   // Extract time (HH:mm format) in Copenhagen timezone
-  const timeString = new Intl.DateTimeFormat('en-US', { 
+  // Use toLocaleTimeString for more reliable formatting
+  const classTime = classDate.toLocaleTimeString('en-GB', { 
     timeZone: 'Europe/Copenhagen', 
     hour: '2-digit', 
     minute: '2-digit',
     hour12: false 
-  }).format(classDate);
-  const classTime = timeString;
+  }).substring(0, 5); // Get just HH:mm part
+  
+  // Debug logging
+  console.log(`Class: ${classInfo.name}, Time extracted: "${classTime}", Rule time: "${rule.time}", Match: ${classTime === rule.time}`);
   
   // Match class name (exact)
   const classNameMatch = classInfo.name?.toLowerCase() === rule.className.toLowerCase();
