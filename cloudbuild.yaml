@@ -9,15 +9,18 @@ steps:
     args:
       - '-c'
       - |
-        cd backend
-        cp package.test.json package.json
-        npm install
+        set -e
+        cd backend && \
+        cp package.test.json package.json && \
+        npm install && \
+        echo '{"type":"service_account","project_id":"test-project"}' > ../serviceAccountKey.json && \
         npm test
     env:
       - 'NODE_ENV=test'
       - 'SESSION_SECRET=test-secret-key'
       - 'GOOGLE_CLIENT_ID=test-client-id'
       - 'GOOGLE_CLIENT_SECRET=test-client-secret'
+      - 'GOOGLE_CLOUD_PROJECT=test-project'
     id: 'run-tests'
 
   # Step 2: Build frontend
@@ -26,8 +29,9 @@ steps:
     args:
       - '-c'
       - |
-        cd frontend
-        npm install
+        set -e
+        cd frontend && \
+        npm install && \
         npm run build
     id: 'build-frontend'
     waitFor: ['run-tests']
