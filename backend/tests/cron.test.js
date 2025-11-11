@@ -1,8 +1,19 @@
 // Unit tests for cron job booking logic
 // These tests call actual production code
 
+// Mock firebase-admin before requiring cron router
+jest.mock('firebase-admin', () => ({
+  initializeApp: jest.fn(),
+  credential: {
+    cert: jest.fn()
+  },
+  firestore: jest.fn(() => ({
+    collection: jest.fn()
+  }))
+}));
+
 const cronRouter = require('../routes/cron');
-const { matchesRule, shouldBookWithWaitingList } = cronRouter;
+const { matchesRule, shouldBookWithWaitingList} = cronRouter;
 
 describe('Cron Job Logic Tests', () => {
 
