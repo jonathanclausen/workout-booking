@@ -4,6 +4,7 @@ const { verifyCronRequest } = require('../middleware/auth');
 const { db } = require('../config/firebase');
 const ArcaClient = require('../services/arca-client');
 const crypto = require('crypto');
+const { DateTime } = require('luxon');
 
 // Configuration: Arca booking window
 const MAX_DAYS_AHEAD = 13; // Maximum days in advance that classes can be booked
@@ -46,26 +47,19 @@ function shouldBookWithWaitingList(classInfo, rule) {
 
 // Helper to check if a class matches booking rule
 function matchesRule(classInfo, rule) {
-  // Parse class date - the API returns times in Danish timezone
-  const classDate = new Date(classInfo.start_date_time);
-  
-  // Extract day of week in Copenhagen timezone
+  const classDate = DateTime.fromISO(classInfo.start_date_time, { setZone: true })
+    .setZone('Europe/Copenhagen');
+
+  if (!classDate.isValid) {
+    console.warn(`Invalid class date received for class ${classInfo.id}: ${classInfo.start_date_time}`);
+    return false;
+  }
+
   const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  const danishDay = new Intl.DateTimeFormat('en-US', { 
-    timeZone: 'Europe/Copenhagen', 
-    weekday: 'long' 
-  }).format(classDate).toLowerCase();
-  
-  // Extract time (HH:mm format) in Copenhagen timezone
-  // Use toLocaleTimeString for more reliable formatting
-  const classTime = classDate.toLocaleTimeString('en-GB', { 
-    timeZone: 'Europe/Copenhagen', 
-    hour: '2-digit', 
-    minute: '2-digit',
-    hour12: false 
-  }).substring(0, 5); // Get just HH:mm part
-  
-  // Debug logging
+  const danishDay = dayNames[classDate.weekday % 7];
+
+  const classTime = classDate.toFormat('HH:mm');
+
   console.log(`Class: ${classInfo.name}, Time extracted: "${classTime}", Rule time: "${rule.time}", Match: ${classTime === rule.time}`);
   
   // Match class name (exact)
@@ -170,8 +164,12 @@ router.post('/check-bookings', verifyCronRequest, async (req, res) => {
           for (const classInfo of allClasses) {
             if (matchesRule(classInfo, rule)) {
               // Safety check: Verify class is not more than 13 days in the future
-              const classDate = new Date(classInfo.start_date_time);
-              const daysUntilClass = Math.ceil((classDate - new Date()) / (1000 * 60 * 60 * 24));
+              const classDate = DateTime.fromISO(classInfo.start_date_time, { setZone: true }).toUTC();
+              if (!classDate.isValid) {
+                console.log(`Skipping class ${classInfo.id} - invalid start_date_time "${classInfo.start_date_time}"`);
+                continue;
+              }
+              const daysUntilClass = Math.ceil(classDate.diffNow('days').days);
               
               if (daysUntilClass > MAX_DAYS_AHEAD) {
                 console.log(`Skipping class ${classInfo.id} - too far in advance (${daysUntilClass} days)`);

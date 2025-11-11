@@ -22,7 +22,8 @@
     "passport-google-oauth20": "^2.0.0",
     "cheerio": "^1.0.0-rc.12",
     "node-cron": "^3.0.3",
-    "nodemailer": "^6.9.7"
+    "nodemailer": "^6.9.7",
+    "luxon": "^3.4.4"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

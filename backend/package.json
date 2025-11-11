@@ -19,6 +19,8 @@
     "testMatch": [
       "**/tests/**/*.test.js"
     ]
+  },
+  "dependencies": {
+    "luxon": "^3.7.2"
   }
 }
-
