@@ -1,4 +1,5 @@
 # Google Cloud Build configuration for CI/CD
+# Documentation: https://cloud.google.com/build/docs/build-config-file-schema
 # Triggers on push to main branch
 # Runs tests -> Builds Docker image -> Deploys to Cloud Run
 
@@ -6,13 +7,12 @@ steps:
   # Step 1: Run backend tests (self-contained unit tests)
   - name: 'node:20'
     dir: 'backend'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        cp package.test.json package.json
-        npm install
-        npm test
+    script: |
+      #!/bin/bash
+      set -e
+      cp package.test.json package.json
+      npm install
+      npm test
     env:
       - 'NODE_ENV=test'
       - 'SESSION_SECRET=test-secret-key'
@@ -23,12 +23,11 @@ steps:
   # Step 2: Build frontend
   - name: 'node:20'
     dir: 'frontend'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        npm install
-        npm run build
+    script: |
+      #!/bin/bash
+      set -e
+      npm install
+      npm run build
     id: 'build-frontend'
     waitFor: ['run-tests']
 
@@ -76,7 +75,9 @@ images:
   - 'gcr.io/$PROJECT_ID/arca-booking-app:latest'
 
 # Build options
+# Documentation: https://cloud.google.com/build/docs/build-config-file-schema#options
 options:
   machineType: 'N1_HIGHCPU_8'
   logging: CLOUD_LOGGING_ONLY
+  logStreamingOption: STREAM_ON
 
