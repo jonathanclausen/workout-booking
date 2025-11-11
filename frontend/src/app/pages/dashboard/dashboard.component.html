@@ -94,7 +94,7 @@
           <tbody>
             <tr *ngFor="let booking of arcaBookings">
               <td>{{ booking.ss_event?.name || 'N/A' }}</td>
-              <td>{{ booking.start_date_time | date:'short' }}</td>
+              <td>{{ booking.start_date_time | date:'short':'Europe/Copenhagen' }}</td>
               <td>{{ booking.ss_event?.gym?.name || 'N/A' }}</td>
               <td>{{ booking.ss_event?.instructor || 'N/A' }}</td>
               <td>
@@ -375,9 +375,9 @@
         </thead>
         <tbody>
           <tr *ngFor="let booking of bookingHistory">
-            <td>{{ (booking.bookedAt || booking.timestamp) | date:'MMM d, y, h:mm a' }}</td>
+            <td>{{ (booking.bookedAt || booking.timestamp) | date:'MMM d, y, h:mm a':'Europe/Copenhagen' }}</td>
             <td>{{ booking.className || 'N/A' }}</td>
-            <td>{{ booking.classTime | date:'MMM d, y, h:mm a' }}</td>
+            <td>{{ booking.classTime | date:'MMM d, y, h:mm a':'Europe/Copenhagen' }}</td>
             <td>{{ booking.gym || 'N/A' }}</td>
             <td>
               <span class="badge" 
