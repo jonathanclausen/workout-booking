@@ -44,33 +44,32 @@ function shouldBookWithWaitingList(classInfo, rule) {
   return false;
 }
 
-// Helper to convert date to Danish timezone (Europe/Copenhagen)
-function toDanishTime(date) {
-  // Convert to Danish time (CET/CEST - UTC+1/+2)
-  return new Date(date.toLocaleString('en-US', { timeZone: 'Europe/Copenhagen' }));
-}
-
 // Helper to check if a class matches booking rule
 function matchesRule(classInfo, rule) {
   // Parse class date - the API returns times in Danish timezone
   const classDate = new Date(classInfo.start_date_time);
   
-  // Convert to Danish time for consistent day/time extraction
-  const danishDate = toDanishTime(classDate);
-  
+  // Extract day of week in Copenhagen timezone
   const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  const classDayOfWeek = dayNames[danishDate.getDay()];
+  const danishDay = new Intl.DateTimeFormat('en-US', { 
+    timeZone: 'Europe/Copenhagen', 
+    weekday: 'long' 
+  }).format(classDate).toLowerCase();
   
-  // Extract time (HH:mm format) in Danish timezone
-  const hours = danishDate.getHours().toString().padStart(2, '0');
-  const minutes = danishDate.getMinutes().toString().padStart(2, '0');
-  const classTime = `${hours}:${minutes}`;
+  // Extract time (HH:mm format) in Copenhagen timezone
+  const timeString = new Intl.DateTimeFormat('en-US', { 
+    timeZone: 'Europe/Copenhagen', 
+    hour: '2-digit', 
+    minute: '2-digit',
+    hour12: false 
+  }).format(classDate);
+  const classTime = timeString;
   
   // Match class name (exact)
   const classNameMatch = classInfo.name?.toLowerCase() === rule.className.toLowerCase();
   
   // Match day of week
-  const dayMatch = classDayOfWeek === rule.dayOfWeek;
+  const dayMatch = danishDay === rule.dayOfWeek;
   
   // Match time (exact)
   const timeMatch = classTime === rule.time;
@@ -84,7 +83,7 @@ function matchesRule(classInfo, rule) {
   const matches = classNameMatch && dayMatch && timeMatch && locationMatch;
   
   if (matches) {
-    console.log(`✓ Match found: ${classInfo.name} at ${classInfo.gym?.name} on ${classDayOfWeek} at ${classTime} (instructor: ${classInfo.instructor})`);
+    console.log(`✓ Match found: ${classInfo.name} at ${classInfo.gym?.name} on ${danishDay} at ${classTime} (instructor: ${classInfo.instructor})`);
   }
   
   return matches;

@@ -28,20 +28,24 @@ echo "📦 Project: $PROJECT_ID"
 echo "🌐 Service URL: $SERVICE_URL"
 
 # Delete existing job if it exists
-gcloud scheduler jobs delete arca-booking-checker --location=$REGION --quiet 2>/dev/null || true
+gcloud scheduler jobs delete booking-check-job --location=$REGION --quiet 2>/dev/null || true
 
-# Create new scheduler job (runs every night at 2 AM)
-gcloud scheduler jobs create http arca-booking-checker \
-  --schedule="0 2 * * *" \
+# Create new scheduler job (runs every morning at 6 AM Copenhagen time)
+gcloud scheduler jobs create http booking-check-job \
+  --schedule="0 6 * * *" \
+  --time-zone="Europe/Copenhagen" \
   --uri="$SERVICE_URL/cron/check-bookings" \
-  --http-method=POST \  
+  --http-method=POST \
   --location=$REGION \
   --headers="X-Cloudscheduler=true" \
-  --description="Check and book Arca classes automatically every night at 2 AM"
+  --description="Check and book Arca classes automatically every morning at 6:00 AM Copenhagen time"
 
 echo "✅ Cloud Scheduler job created!"
-echo "⏰ The app will check for bookings every night at 2:00 AM (${REGION} time)"
+echo "⏰ The app will check for bookings every morning at 6:00 AM Copenhagen time"
 echo ""
 echo "📝 You can view the job at:"
 echo "   https://console.cloud.google.com/cloudscheduler?project=$PROJECT_ID"
+echo ""
+echo "To manually trigger the job:"
+echo "   gcloud scheduler jobs run booking-check-job --location=$REGION"
 

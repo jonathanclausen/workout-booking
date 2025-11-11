@@ -33,11 +33,11 @@ describe('Cron Job Integration Tests', () => {
     await db.collection('users').doc(testUserId).delete();
   });
 
-  describe('GET /cron/check-bookings', () => {
+  describe('POST /cron/check-bookings', () => {
     it('should process booking rules (development mode)', async () => {
       // In development, this endpoint doesn't require Cloud Scheduler headers
       const response = await request(app)
-        .get('/cron/check-bookings')
+        .post('/cron/check-bookings')
         .expect(200);
 
       expect(response.body).toHaveProperty('message');
@@ -50,12 +50,12 @@ describe('Cron Job Integration Tests', () => {
 
       // Without header, should fail
       await request(app)
-        .get('/cron/check-bookings')
+        .post('/cron/check-bookings')
         .expect(403);
 
       // With header, should succeed
       await request(app)
-        .get('/cron/check-bookings')
+        .post('/cron/check-bookings')
         .set('X-Cloudscheduler', 'true')
         .expect(200);
 
@@ -79,16 +79,25 @@ describe('Cron Job Integration Tests', () => {
         free_space: 5
       };
 
-      // Test matching logic
+      // Test matching logic using Copenhagen timezone
       const classDate = new Date(classInfo.start_date_time);
-      const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-      const dayOfWeek = dayNames[classDate.getDay()];
-      const hours = classDate.getHours().toString().padStart(2, '0');
-      const minutes = classDate.getMinutes().toString().padStart(2, '0');
-      const time = `${hours}:${minutes}`;
+      
+      // Extract day of week in Copenhagen timezone
+      const danishDay = new Intl.DateTimeFormat('en-US', { 
+        timeZone: 'Europe/Copenhagen', 
+        weekday: 'long' 
+      }).format(classDate).toLowerCase();
+      
+      // Extract time (HH:mm format) in Copenhagen timezone
+      const time = new Intl.DateTimeFormat('en-US', { 
+        timeZone: 'Europe/Copenhagen', 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: false 
+      }).format(classDate);
 
       expect(classInfo.name).toBe(rule.className);
-      expect(dayOfWeek).toBe(rule.dayOfWeek);
+      expect(danishDay).toBe(rule.dayOfWeek);
       expect(time).toBe(rule.time);
       expect(classInfo.gym.name).toBe(rule.location);
     });
