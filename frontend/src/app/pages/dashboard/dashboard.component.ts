@@ -244,25 +244,19 @@ export class DashboardComponent implements OnInit {
     );
   }
 
-  toDanishTime(date: Date): Date {
-    // Convert to Danish timezone (Europe/Copenhagen - CET/CEST)
-    return new Date(date.toLocaleString('en-US', { timeZone: 'Europe/Copenhagen' }));
+  extractTimeFromISO(isoString: string): string {
+    // Parse ISO: "2024-11-11T18:00:00+01:00"
+    const match = isoString.match(/T(\d{2}):(\d{2}):/);
+    return match ? `${match[1]}:${match[2]}` : '00:00';
   }
 
   selectClass(classInfo: any): void {
-    // Extract day of week from start_date_time
     const classDate = new Date(classInfo.start_date_time);
-    
-    // Convert to Danish time for consistent day/time extraction
-    const danishDate = this.toDanishTime(classDate);
-    
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    const dayOfWeek = dayNames[danishDate.getDay()];
+    const dayOfWeek = dayNames[classDate.getUTCDay()];
     
-    // Extract time (HH:mm format) in Danish timezone
-    const hours = danishDate.getHours().toString().padStart(2, '0');
-    const minutes = danishDate.getMinutes().toString().padStart(2, '0');
-    const time = `${hours}:${minutes}`;
+    // Extract time directly from ISO string
+    const time = this.extractTimeFromISO(classInfo.start_date_time);
     
     this.ruleForm = {
       className: classInfo.name || classInfo.title,

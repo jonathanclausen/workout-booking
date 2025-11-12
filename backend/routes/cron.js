@@ -45,27 +45,30 @@ function shouldBookWithWaitingList(classInfo, rule) {
   return false;
 }
 
+// Helper to extract time from ISO string (already in Danish timezone)
+function extractTimeFromISO(isoString) {
+  // Parse ISO: "2024-11-11T18:00:00+01:00"
+  const match = isoString.match(/T(\d{2}):(\d{2}):/);
+  if (match) {
+    return `${match[1]}:${match[2]}`;
+  }
+  return null;
+}
+
 // Helper to check if a class matches booking rule
 function matchesRule(classInfo, rule) {
-  const classDate = DateTime.fromISO(classInfo.start_date_time, { setZone: true })
-    .setZone('Europe/Copenhagen');
-
-  if (!classDate.isValid) {
-    console.warn(`Invalid class date received for class ${classInfo.id}: ${classInfo.start_date_time}`);
+  // Parse for day of week
+  const classDate = new Date(classInfo.start_date_time);
+  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const classDayOfWeek = dayNames[classDate.getUTCDay()];
+  
+  // Extract time directly from ISO string (no conversion needed)
+  const classTime = extractTimeFromISO(classInfo.start_date_time);
+  
+  if (!classTime) {
+    console.warn(`Could not extract time from: ${classInfo.start_date_time}`);
     return false;
   }
-
-  console.log(
-    `Class candidate ${classInfo.id}`,
-    `raw=${classInfo.start_date_time}`,
-    `cph=${classDate.toISO()}`,
-    `utc=${classDate.toUTC().toISO()}`
-  );
-
-  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  const danishDay = dayNames[classDate.weekday % 7];
-
-  const classTime = classDate.toFormat('HH:mm');
 
   console.log(`Class: ${classInfo.name}, Time extracted: "${classTime}", Rule time: "${rule.time}", Match: ${classTime === rule.time}`);
   
@@ -73,7 +76,7 @@ function matchesRule(classInfo, rule) {
   const classNameMatch = classInfo.name?.toLowerCase() === rule.className.toLowerCase();
   
   // Match day of week
-  const dayMatch = danishDay === rule.dayOfWeek;
+  const dayMatch = classDayOfWeek === rule.dayOfWeek;
   
   // Match time (exact)
   const timeMatch = classTime === rule.time;
@@ -87,7 +90,7 @@ function matchesRule(classInfo, rule) {
   const matches = classNameMatch && dayMatch && timeMatch && locationMatch;
   
   if (matches) {
-    console.log(`✓ Match found: ${classInfo.name} at ${classInfo.gym?.name} on ${danishDay} at ${classTime} (instructor: ${classInfo.instructor})`);
+    console.log(`✓ Match found: ${classInfo.name} at ${classInfo.gym?.name} on ${classDayOfWeek} at ${classTime} (instructor: ${classInfo.instructor})`);
   }
   
   return matches;
