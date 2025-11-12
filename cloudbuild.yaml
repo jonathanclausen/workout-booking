@@ -61,7 +61,7 @@ steps:
       - '--region=us-central1'
       - '--platform=managed'
       - '--allow-unauthenticated'
-      - '--set-env-vars=NODE_ENV=production,ARCA_BASE_URL=https://backend.arca.dk'
+      - '--set-env-vars=NODE_ENV=production,GOOGLE_CLOUD_PROJECT=$PROJECT_ID,ARCA_BASE_URL=https://backend.arca.dk'
       - '--set-secrets=GOOGLE_CLIENT_ID=google-client-id:latest,GOOGLE_CLIENT_SECRET=google-client-secret:latest,SESSION_SECRET=session-secret:latest'
     id: 'deploy-cloud-run'
     waitFor: ['push-image']
