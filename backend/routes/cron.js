@@ -7,7 +7,7 @@ const crypto = require('crypto');
 const { DateTime } = require('luxon');
 
 // Configuration: Arca booking window
-const MAX_DAYS_AHEAD = 13; // Maximum days in advance that classes can be booked
+const MAX_DAYS_AHEAD = 14; // Maximum days in advance that classes can be booked
 
 function decrypt(text) {
   const ENCRYPTION_KEY = crypto.createHash('sha256')
